@@ -1,0 +1,35 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#9B5DE5;stop-opacity:1" />
+    </linearGradient>
+
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Dark navy background with rounded corners -->
+  <rect width="512" height="512" fill="#0A0E27" rx="80" ry="80"/>
+
+  <!-- Explosion/star burst shape behind text -->
+  <g id="starburst" transform="translate(256, 256)" filter="url(#glow)">
+    <!-- 8-pointed star burst -->
+    <polygon points="0,-80 20,-40 60,-60 30,-30 80,0 40,20 60,60 20,30 0,80 -20,40 -60,60 -30,30 -80,0 -40,-20 -60,-60 -20,-30"
+             fill="#FF6B35" opacity="0.3"/>
+  </g>
+
+  <!-- Large bold "10" text with gradient -->
+  <text x="256" y="340"
+        font-family="Arial, sans-serif"
+        font-size="280"
+        font-weight="bold"
+        text-anchor="middle"
+        fill="url(#textGradient)"
+        filter="url(#glow)">10</text>
+</svg>
