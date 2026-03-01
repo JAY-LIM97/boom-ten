@@ -1,7 +1,7 @@
 // ui.js - BOOM TEN UI Controller
-const BoomTen = window.BoomTen || {};
+window.BoomTen = window.BoomTen || {};
 
-BoomTen.UI = (function () {
+window.BoomTen.UI = (function () {
   'use strict';
 
   // ─── DOM References ────────────────────────────────────────────────────────
@@ -333,4 +333,4 @@ BoomTen.UI = (function () {
   };
 })();
 
-window.BoomTen = BoomTen;
+// BoomTen namespace is already on window.

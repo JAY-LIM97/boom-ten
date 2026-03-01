@@ -1,7 +1,7 @@
 // effects.js - BOOM TEN Visual Effects System
-const BoomTen = window.BoomTen || {};
+window.BoomTen = window.BoomTen || {};
 
-BoomTen.Effects = (function() {
+window.BoomTen.Effects = (function() {
   const MAX_PARTICLES = 200;
 
   let particles = [];
@@ -279,4 +279,4 @@ BoomTen.Effects = (function() {
   };
 })();
 
-window.BoomTen = BoomTen;
+// BoomTen namespace is already on window.

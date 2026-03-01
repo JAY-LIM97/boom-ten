@@ -5,9 +5,9 @@
 // Matter.js is loaded via CDN and is available as the global `Matter` object.
 // This module is wrapped in an IIFE and exposed on window.BoomTen.Game.
 
-const BoomTen = window.BoomTen || {};
+window.BoomTen = window.BoomTen || {};
 
-BoomTen.Game = (function () {
+window.BoomTen.Game = (function () {
   'use strict';
 
   // ---------------------------------------------------------------------------
@@ -714,5 +714,4 @@ BoomTen.Game = (function () {
   };
 })();
 
-// Make the namespace available globally.
-window.BoomTen = BoomTen;
+// BoomTen namespace is already on window – no extra assignment needed.

@@ -1,7 +1,7 @@
 // drag.js - BOOM TEN Drag Detection & Match-10 Logic
-const BoomTen = window.BoomTen || {};
+window.BoomTen = window.BoomTen || {};
 
-BoomTen.Drag = (function() {
+window.BoomTen.Drag = (function() {
   const { Body } = Matter;
 
   let dragOverlay, sumIndicator;
@@ -398,4 +398,4 @@ BoomTen.Drag = (function() {
   };
 })();
 
-window.BoomTen = BoomTen;
+// BoomTen namespace is already on window.
