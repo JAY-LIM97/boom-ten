@@ -7,7 +7,7 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="붐텐" />
-  <meta name="description" content="숫자를 드래그해 10을 만들어라! 물리 기반 숫자 퍼즐 게임" />
+  <meta name="description" content="같은 숫자를 합쳐 2048을 만들어라! 2048 + 수박게임 물리 퍼즐" />
 
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="assets/icons/icon.svg" />
@@ -394,40 +394,26 @@
       touch-action: none;
     }
 
-    #drag-overlay {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      width: 100%;
-      height: 100%;
-    }
-
-    /* ─── Sum Indicator ─────────────────────────────────── */
-    #sum-indicator {
-      position: absolute;
-      pointer-events: none;
-      transform: translate(-50%, -100%);
-      margin-top: -12px;
-      z-index: 20;
-      white-space: nowrap;
-    }
-
-    .sum-badge {
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 1.05rem;
+    /* ─── Next Ball Preview ────────────────────────────── */
+    #hud-next-ball {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-weight: 900;
-      letter-spacing: 0.02em;
+      font-size: 1rem;
       color: white;
-      background: rgba(26, 34, 80, 0.92);
-      border: 2px solid var(--color-accent-c);
-      box-shadow: 0 0 12px rgba(0, 212, 255, 0.4);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: #FF6B6B;
+      border: 2px solid rgba(255,255,255,0.2);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      transition: background 0.2s ease, transform 0.15s ease;
     }
 
-    .sum-badge.over { border-color: var(--color-danger); box-shadow: 0 0 12px rgba(255, 56, 96, 0.5); }
-    .sum-badge.exact { border-color: var(--color-success); box-shadow: 0 0 18px rgba(0, 255, 136, 0.6); animation: pulse-glow 0.5s ease; }
+    #hud-next-ball.pop {
+      animation: score-pop 0.3s ease;
+    }
 
     /* ─── Danger Zone Line ──────────────────────────────── */
     #danger-line {
@@ -435,7 +421,7 @@
       left: 0;
       right: 0;
       height: 2px;
-      top: 12%;
+      top: 15%;
       z-index: 5;
       background: linear-gradient(90deg, transparent 0%, rgba(255, 56, 96, 0.6) 20%, rgba(255, 56, 96, 0.8) 50%, rgba(255, 56, 96, 0.6) 80%, transparent 100%);
       animation: danger-pulse 1.8s ease-in-out infinite;
@@ -859,17 +845,17 @@
         </div>
       </div>
 
-      <!-- Decorative number bombs -->
+      <!-- Decorative merge concept -->
       <div aria-hidden="true" style="display:flex;gap:10px;margin-bottom:6px;margin-top:-4px;">
-        <span style="background:rgba(255,107,53,0.15);border:1.5px solid rgba(255,107,53,0.4);border-radius:10px;padding:4px 11px;font-size:1rem;font-weight:900;color:#FF6B35;">3</span>
+        <span style="background:rgba(255,107,107,0.15);border:1.5px solid rgba(255,107,107,0.4);border-radius:10px;padding:4px 11px;font-size:1rem;font-weight:900;color:#FF6B6B;">4</span>
         <span style="background:rgba(0,212,255,0.12);border:1.5px solid rgba(0,212,255,0.3);border-radius:10px;padding:4px 11px;font-size:1rem;font-weight:900;color:#00D4FF;">+</span>
-        <span style="background:rgba(155,93,229,0.15);border:1.5px solid rgba(155,93,229,0.4);border-radius:10px;padding:4px 11px;font-size:1rem;font-weight:900;color:#9B5DE5;">7</span>
+        <span style="background:rgba(255,107,107,0.15);border:1.5px solid rgba(255,107,107,0.4);border-radius:10px;padding:4px 11px;font-size:1rem;font-weight:900;color:#FF6B6B;">4</span>
         <span style="background:rgba(0,212,255,0.12);border:1.5px solid rgba(0,212,255,0.3);border-radius:10px;padding:4px 11px;font-size:1rem;font-weight:900;color:#00D4FF;">=</span>
-        <span style="background:rgba(0,255,136,0.15);border:1.5px solid rgba(0,255,136,0.4);border-radius:10px;padding:4px 14px;font-size:1rem;font-weight:900;color:#00FF88;">10!</span>
+        <span style="background:rgba(255,160,107,0.15);border:1.5px solid rgba(255,160,107,0.4);border-radius:10px;padding:4px 14px;font-size:1rem;font-weight:900;color:#FFA06B;">8!</span>
       </div>
 
       <!-- Subtitle -->
-      <p class="splash-subtitle">숫자를 드래그해 10을 만들어라!</p>
+      <p class="splash-subtitle">같은 숫자를 합쳐 2048을 만들어라!</p>
 
       <!-- CTA button -->
       <button
@@ -883,7 +869,7 @@
 
       <!-- How-to hint -->
       <p style="margin-top:18px;font-size:0.72rem;color:var(--color-text-muted);letter-spacing:0.05em;text-align:center;max-width:240px;line-height:1.6;">
-        숫자 위를 드래그해 선택 · 합이 10이면 폭발!
+        터치해서 숫자를 떨어뜨려요 · 같은 숫자끼리 합체!
       </p>
 
     </div>
@@ -901,16 +887,22 @@
     <!-- ── Top HUD ── -->
     <div id="game-hud">
 
-      <!-- Score (left) -->
+      <!-- Score = highest ball (left) -->
       <div class="hud-score-block">
-        <span class="hud-label">점수</span>
+        <span class="hud-label">최고</span>
         <span id="hud-score">0</span>
       </div>
 
       <!-- Combo (center) -->
       <div id="hud-combo-block">
-        <span id="hud-combo" class="combo-0">×1</span>
+        <span id="hud-combo" class="combo-0"></span>
         <span id="hud-combo-label">콤보</span>
+      </div>
+
+      <!-- Next ball preview -->
+      <div style="display:flex;flex-direction:column;align-items:center;min-width:50px;">
+        <span class="hud-label">다음</span>
+        <div id="hud-next-ball">1</div>
       </div>
 
       <!-- Pause button (right) -->
@@ -925,28 +917,6 @@
 
       <!-- Physics canvas -->
       <canvas id="game-canvas" aria-label="게임 화면"></canvas>
-
-      <!-- Drag line SVG overlay -->
-      <svg id="drag-overlay" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-          <filter id="glow-filter">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-        <!-- Drag path rendered here by drag.js -->
-      </svg>
-
-      <!-- Sum indicator (floating above drag) -->
-      <div id="sum-indicator" class="hidden" role="status" aria-live="polite">
-        <div class="sum-badge">
-          <span id="sum-value">0</span>
-          <span style="color:var(--color-text-muted);font-size:0.75rem;">&nbsp;/ 10</span>
-        </div>
-      </div>
 
       <!-- Danger zone line -->
       <div id="danger-line" aria-hidden="true"></div>
@@ -973,11 +943,11 @@
 
       <!-- Title -->
       <div class="gameover-title gradient-text">GAME OVER</div>
-      <p class="gameover-subtitle">더 이상 공간이 없어요</p>
+      <p class="gameover-subtitle">공이 위험선을 넘었어요!</p>
 
       <!-- Final Score -->
       <div class="score-display-block">
-        <span class="score-display-label">최종 점수</span>
+        <span class="score-display-label">최고 숫자</span>
         <span id="final-score" class="score-display-value gradient-text">0</span>
       </div>
 
@@ -1073,11 +1043,11 @@
   <!-- ════════════════════════════════════════════════════
        SCRIPTS (deferred)
   ═════════════════════════════════════════════════════ -->
-  <script defer src="js/game.js"></script>
-  <script defer src="js/drag.js"></script>
-  <script defer src="js/effects.js"></script>
-  <script defer src="js/ui.js"></script>
-  <script defer src="js/index.js"></script>
+  <script defer src="js/game.js?v=4"></script>
+  <script defer src="js/drop.js?v=4"></script>
+  <script defer src="js/effects.js?v=4"></script>
+  <script defer src="js/ui.js?v=4"></script>
+  <script defer src="js/index.js?v=4"></script>
 
   <!-- Inline bootstrap (runs after all deferred scripts) -->
   <script>

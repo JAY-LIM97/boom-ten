@@ -1,10 +1,10 @@
 // service-worker.js - BOOM TEN PWA Offline Support
-const CACHE_NAME = 'boomten-v1';
+const CACHE_NAME = 'boomten-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './js/game.js',
-  './js/drag.js',
+  './js/drop.js',
   './js/effects.js',
   './js/ui.js',
   './js/index.js',
@@ -36,7 +36,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: network-first for HTML, cache-first for assets
+// Fetch: network-first with cache fallback
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
@@ -49,11 +49,8 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(request).then((networkResponse) => {
+    fetch(request)
+      .then((networkResponse) => {
         // Cache successful responses for future offline use
         if (networkResponse && networkResponse.status === 200) {
           const responseClone = networkResponse.clone();
@@ -62,12 +59,15 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return networkResponse;
-      });
-    }).catch(() => {
-      // Offline fallback for navigation requests
-      if (request.mode === 'navigate') {
-        return caches.match('./index.html');
-      }
-    })
+      })
+      .catch(() => {
+        // Offline fallback: serve from cache
+        return caches.match(request).then((cachedResponse) => {
+          if (cachedResponse) return cachedResponse;
+          if (request.mode === 'navigate') {
+            return caches.match('./index.html');
+          }
+        });
+      })
   );
 });

@@ -1,4 +1,4 @@
-// game.js - BOOM TEN Physics Engine Core
+// game.js - BOOM TEN Physics Engine Core (2048 + Suika Game Hybrid)
 // Uses Matter.js globals: Matter.Engine, Matter.World, Matter.Bodies, Matter.Body,
 //                         Matter.Events, Matter.Runner, Matter.Query, Matter.Composite
 //
@@ -19,68 +19,70 @@ window.BoomTen.Game = (function () {
   // Constants
   // ---------------------------------------------------------------------------
 
-  /** Ball fill colors keyed by number value (1–9). */
+  /** Ball fill colors keyed by number value (powers of 2). */
   const COLORS = {
-    1: '#FF6B6B',
-    2: '#FFA06B',
-    3: '#FFD93D',
-    4: '#6BCB77',
-    5: '#4D96FF',
-    6: '#9B59B6',
-    7: '#FF85B3',
-    8: '#00D2D3',
-    9: '#FF6348',
+    1:    '#FF6B6B',   // red
+    2:    '#FFA06B',   // orange
+    4:    '#FFD93D',   // yellow
+    8:    '#6BCB77',   // green
+    16:   '#4D96FF',   // blue
+    32:   '#9B59B6',   // purple
+    64:   '#FF85B3',   // pink
+    128:  '#00D2D3',   // teal
+    256:  '#FF6348',   // coral
+    512:  '#FFD700',   // gold
+    1024: '#E056A0',   // magenta
+    2048: '#FFFFFF',   // white (ultimate)
   };
 
   /**
-   * Spawn-weight table.
-   * Distribution target:
-   *   1-3 → ~45 %  (15 % each)  → 15 entries each  = 45
-   *   4-6 → ~35 %  (~12 % each) → 12, 12, 11 entries = 35
-   *   7-9 → ~20 %  (~7 % each)  →  7,  7,  6 entries = 20
-   * Total: 100 entries → straightforward uniform random pick.
+   * Spawn-weight table for player drops.
+   * Only small values spawn; larger values come from merging.
+   * Distribution: 1→40%, 2→30%, 4→20%, 8→10%
    */
   const SPAWN_WEIGHTS = [
-    // 1 – 15 entries
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    // 2 – 15 entries
-    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    // 3 – 15 entries
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-    // 4 – 12 entries
-    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-    // 5 – 12 entries
-    5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-    // 6 – 11 entries
-    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-    // 7 – 7 entries
-    7, 7, 7, 7, 7, 7, 7,
-    // 8 – 7 entries
-    8, 8, 8, 8, 8, 8, 8,
-    // 9 – 6 entries
-    9, 9, 9, 9, 9, 9,
+    // 1 – 40 entries (40%)
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    // 2 – 30 entries (30%)
+    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+    2,2,2,2,2,2,2,2,2,2,
+    // 4 – 20 entries (20%)
+    4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
+    // 8 – 10 entries (10%)
+    8,8,8,8,8,8,8,8,8,8,
   ]; // length === 100
 
   /** Hard cap on simultaneous physics bodies (balls). */
-  const MAX_BALLS = 60;
-
-  /** Starting interval between auto-spawned balls, in milliseconds. */
-  const BASE_SPAWN_INTERVAL = 2500;
-
-  /** Fastest the spawn interval may shrink to, in milliseconds. */
-  const MIN_SPAWN_INTERVAL = 1000;
+  const MAX_BALLS = 80;
 
   /**
    * Vertical position of the "danger line" expressed as a fraction of canvas
    * height measured from the top (0 = top edge, 1 = bottom edge).
    */
-  const DANGER_LINE_PERCENT = 0.12; // 12 % from the top
+  const DANGER_LINE_PERCENT = 0.15;
 
   /**
    * How long (ms) a ball must remain above the danger line without moving
    * before triggering game-over.
    */
   const DANGER_TIME_LIMIT = 3000;
+
+  /** Height of the drop zone at the top of the screen (fraction). */
+  const DROP_ZONE_HEIGHT_PERCENT = 0.10;
+
+  /** Cooldown between drops in milliseconds. */
+  const DROP_COOLDOWN = 500;
+
+  /**
+   * Calculate ball radius from its number value.
+   * Larger numbers = bigger balls. Uses log2 for 2048-style scaling.
+   * @param {number} number - The ball's number value (power of 2).
+   * @returns {number} Radius in pixels.
+   */
+  function ballRadius(number) {
+    return 16 + Math.log2(Math.max(1, number)) * 4 + 2;
+  }
 
   // ---------------------------------------------------------------------------
   // Module-level variables
@@ -106,7 +108,7 @@ window.BoomTen.Game = (function () {
 
   /**
    * Live array of all active ball physics bodies.
-   * Each body has a `.gameData` property (see createBall).
+   * Each body has a `.gameData` property (see createBallAt).
    * @type {Matter.Body[]}
    */
   let balls = [];
@@ -122,17 +124,18 @@ window.BoomTen.Game = (function () {
    * Mutable game state object.  Accessed from outside via the `state` getter.
    */
   let state = {
-    score: 0,
+    score: 0,                // score = highest ball number
     bestScore: parseInt(localStorage.getItem('boomten_best') || '0', 10),
     combo: 0,
-    comboTimer: null,          // setTimeout handle
-    gameState: 'splash',       // 'splash' | 'playing' | 'paused' | 'gameover'
-    spawnInterval: BASE_SPAWN_INTERVAL,
-    spawnTimer: null,          // setInterval handle
-    difficulty: 1,             // incremented every 10 s
-    difficultyTimer: null,     // setInterval handle
-    isAnimating: false,        // true while a magnet / merge animation is running
-    dangerBodies: new Map(),   // Map<bodyId, timestampMs> – first frame above danger
+    comboTimer: null,
+    gameState: 'splash',     // 'splash' | 'playing' | 'paused' | 'gameover'
+    isAnimating: false,
+    dangerBodies: new Map(), // Map<bodyId, timestampMs>
+    // Suika/2048 merge state
+    nextBallNumber: null,
+    canDrop: true,
+    dropCooldownTimer: null,
+    merging: new Set(),      // Set<bodyId> to prevent double-processing
   };
 
   // ---------------------------------------------------------------------------
@@ -166,11 +169,6 @@ window.BoomTen.Game = (function () {
   // Resize handling
   // ---------------------------------------------------------------------------
 
-  /**
-   * Resize the canvas to fill its parent container and rebuild the static
-   * boundary walls to match the new dimensions.
-   * Called automatically on window 'resize'.
-   */
   function resize() {
     const container = canvas.parentElement;
     canvasWidth  = container.clientWidth;
@@ -181,12 +179,7 @@ window.BoomTen.Game = (function () {
     rebuildWalls();
   }
 
-  /**
-   * Remove the old wall bodies from the physics world and add fresh ones
-   * that match the current canvas dimensions.
-   */
   function rebuildWalls() {
-    // Remove every previously created wall from the world.
     if (walls.length > 0) {
       walls.forEach(w => Composite.remove(engine.world, w));
       walls = [];
@@ -201,7 +194,6 @@ window.BoomTen.Game = (function () {
 
     const thickness = 20;
 
-    // Floor – sits just below the visible canvas area.
     const floor = Bodies.rectangle(
       canvasWidth / 2,
       canvasHeight + thickness / 2,
@@ -210,7 +202,6 @@ window.BoomTen.Game = (function () {
       wallOptions
     );
 
-    // Left wall – tall enough to contain any spawning ball.
     const leftWall = Bodies.rectangle(
       -thickness / 2,
       canvasHeight / 2,
@@ -219,7 +210,6 @@ window.BoomTen.Game = (function () {
       wallOptions
     );
 
-    // Right wall – mirrors the left wall.
     const rightWall = Bodies.rectangle(
       canvasWidth + thickness / 2,
       canvasHeight / 2,
@@ -237,44 +227,32 @@ window.BoomTen.Game = (function () {
   // ---------------------------------------------------------------------------
 
   /**
-   * Create a single ball body and add it to the physics world.
+   * Create a ball with a specific number at a specific position.
+   * Used by the drop system and merge logic.
    *
-   * @param {number} [x] - Optional horizontal spawn position (px).
-   *   Defaults to a random position within the canvas bounds.
-   * @returns {Matter.Body|null} The created body, or null when the cap is hit.
+   * @param {number} x - Horizontal position.
+   * @param {number} y - Vertical position.
+   * @param {number} number - The ball's number value (power of 2).
+   * @returns {Matter.Body|null}
    */
-  function createBall(x) {
+  function createBallAt(x, y, number) {
     if (balls.length >= MAX_BALLS) return null;
 
-    // Pick a random number using the weighted table.
-    const number = SPAWN_WEIGHTS[Math.floor(Math.random() * SPAWN_WEIGHTS.length)];
+    const radius = ballRadius(number);
+    const clampedX = Math.max(radius + 5, Math.min(canvasWidth - radius - 5, x));
 
-    // Radius scales with the ball's number so higher numbers feel heavier.
-    const radius  = 20 + number * 3;
-
-    // Clamp the horizontal position so the ball never spawns inside a wall.
-    const spawnX  = (x !== undefined)
-      ? Math.max(radius, Math.min(canvasWidth - radius, x))
-      : radius + Math.random() * (canvasWidth - radius * 2);
-
-    // Spawn slightly above the top edge so the ball falls in naturally.
-    const spawnY  = -radius - 10;
-
-    const body = Bodies.circle(spawnX, spawnY, radius, {
-      restitution: 0.3,   // slight bounciness
+    const body = Bodies.circle(clampedX, y, radius, {
+      restitution: 0.3,
       friction:    0.1,
-      frictionAir: 0.01,  // very light air resistance
+      frictionAir: 0.01,
       density:     0.001,
       label:       'ball',
     });
 
-    // Attach game-specific metadata directly on the body object.
     body.gameData = {
       number:   number,
-      color:    COLORS[number],
+      color:    COLORS[number] || '#AAAAAA',
       radius:   radius,
-      selected: false,
-      // Unique identifier used for the dangerBodies map.
       id: 'ball_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
     };
 
@@ -284,36 +262,167 @@ window.BoomTen.Game = (function () {
   }
 
   /**
+   * Roll the next ball number from the spawn weights table.
+   * Stores it in state.nextBallNumber for preview display.
+   * @returns {number}
+   */
+  function rollNextBall() {
+    state.nextBallNumber = SPAWN_WEIGHTS[Math.floor(Math.random() * SPAWN_WEIGHTS.length)];
+    return state.nextBallNumber;
+  }
+
+  /**
    * Remove a single ball from the physics world and the balls array.
-   *
    * @param {Matter.Body} body
    */
   function removeBall(body) {
     Composite.remove(engine.world, body);
     balls = balls.filter(b => b !== body);
-    // Clean up any lingering danger-zone entry for this body.
     state.dangerBodies.delete(body.gameData && body.gameData.id);
   }
 
   /**
-   * Remove multiple balls from the physics world and the balls array in one
-   * batch operation.  More efficient than calling removeBall repeatedly because
-   * the balls array is filtered only once.
-   *
+   * Remove multiple balls in one batch operation.
    * @param {Matter.Body[]} bodyArray
    */
   function removeBalls(bodyArray) {
     const bodySet = new Set(bodyArray);
-
     bodyArray.forEach(b => {
       Composite.remove(engine.world, b);
-      // Clean up danger-zone tracking for each removed body.
       if (b.gameData) {
         state.dangerBodies.delete(b.gameData.id);
       }
     });
-
     balls = balls.filter(b => !bodySet.has(b));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Collision-based merge system (Suika + 2048)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Register the Matter.js collision event handler for merge detection.
+   */
+  function setupCollisionHandler() {
+    Events.off(engine, 'collisionStart', onCollisionStart);
+    Events.on(engine, 'collisionStart', onCollisionStart);
+  }
+
+  /**
+   * Collision event callback. Finds same-number ball pairs and triggers merges.
+   */
+  function onCollisionStart(event) {
+    if (state.gameState !== 'playing') return;
+
+    const pairs = event.pairs;
+
+    for (let i = 0; i < pairs.length; i++) {
+      const pair = pairs[i];
+      const bodyA = pair.bodyA;
+      const bodyB = pair.bodyB;
+
+      // Both must be balls (not walls)
+      if (bodyA.label !== 'ball' || bodyB.label !== 'ball') continue;
+      if (!bodyA.gameData || !bodyB.gameData) continue;
+
+      // Skip if either body is already being merged
+      const idA = bodyA.gameData.id;
+      const idB = bodyB.gameData.id;
+      if (state.merging.has(idA) || state.merging.has(idB)) continue;
+
+      // Same number check
+      if (bodyA.gameData.number === bodyB.gameData.number) {
+        state.merging.add(idA);
+        state.merging.add(idB);
+        // Defer merge to avoid modifying physics world mid-step
+        setTimeout(() => mergeBalls(bodyA, bodyB), 0);
+      }
+    }
+  }
+
+  /**
+   * Merge two same-number balls into one ball with doubled value.
+   * @param {Matter.Body} bodyA
+   * @param {Matter.Body} bodyB
+   */
+  function mergeBalls(bodyA, bodyB) {
+    // Safety: verify both bodies still exist
+    if (!balls.includes(bodyA) || !balls.includes(bodyB)) {
+      if (bodyA.gameData) state.merging.delete(bodyA.gameData.id);
+      if (bodyB.gameData) state.merging.delete(bodyB.gameData.id);
+      return;
+    }
+
+    const currentNumber = bodyA.gameData.number;
+    const newNumber = currentNumber * 2; // 2048 style: double the value
+
+    // Calculate midpoint for the new ball
+    const midX = (bodyA.position.x + bodyB.position.x) / 2;
+    const midY = (bodyA.position.y + bodyB.position.y) / 2;
+
+    // Colors for particle effects
+    const colors = [bodyA.gameData.color, bodyB.gameData.color];
+
+    // Remove both balls
+    removeBalls([bodyA, bodyB]);
+
+    // Clean up merging set
+    state.merging.delete(bodyA.gameData.id);
+    state.merging.delete(bodyB.gameData.id);
+
+    // Create the merged ball at the midpoint
+    const newBall = createBallAt(midX, midY, newNumber);
+
+    if (newBall) {
+      // Particle burst for merge feedback
+      if (BoomTen.Effects) {
+        const newColor = COLORS[newNumber] || '#FFFFFF';
+        BoomTen.Effects.explode(midX, midY, [newColor, ...colors]);
+
+        // Big explosion for milestone numbers (128+)
+        if (newNumber >= 128) {
+          BoomTen.Effects.explode(midX, midY, [newColor, '#FFFFFF', '#FFD700']);
+          BoomTen.Effects.triggerShake(8 + Math.log2(newNumber), 400);
+        } else if (newNumber >= 32) {
+          BoomTen.Effects.triggerShake(4, 200);
+        }
+
+        // Floating text showing the new number
+        BoomTen.Effects.floatingText(midX, midY - 30, String(newNumber), state.combo);
+      }
+
+      // Update highest ball (score)
+      updateHighest(newNumber);
+
+      // Increment combo
+      state.combo++;
+      if (state.comboTimer) clearTimeout(state.comboTimer);
+      state.comboTimer = setTimeout(() => { state.combo = 0; }, 2000);
+
+      // Haptic
+      if (navigator.vibrate) navigator.vibrate(newNumber >= 64 ? [30, 20, 50] : 20);
+    }
+  }
+
+  /**
+   * Update the score (highest ball number) if a new merge creates a higher value.
+   * @param {number} newNumber - The merged ball's number.
+   */
+  function updateHighest(newNumber) {
+    if (newNumber > state.score) {
+      state.score = newNumber;
+
+      // Persist best score
+      if (state.score > state.bestScore) {
+        state.bestScore = state.score;
+        localStorage.setItem('boomten_best', state.bestScore.toString());
+      }
+
+      // Notify the UI layer
+      if (BoomTen.UI) {
+        BoomTen.UI.updateScore(state.score, state.combo, newNumber);
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -322,86 +431,61 @@ window.BoomTen.Game = (function () {
 
   /**
    * Reset all game state and start a fresh game session.
-   * Clears existing physics bodies, resets timers, and begins the render loop.
    */
   function startGame() {
-    // --- Reset physics world ---
-    // Remove every live ball from the world.
+    // Remove every live ball
     balls.forEach(b => Composite.remove(engine.world, b));
     balls = [];
 
-    // --- Reset game state ---
-    state.score          = 0;
-    state.combo          = 0;
-    state.difficulty     = 1;
-    state.spawnInterval  = BASE_SPAWN_INTERVAL;
-    state.gameState      = 'playing';
-    state.isAnimating    = false;
+    // Ensure canvas is sized (may be 0 if init ran while hidden)
+    resize();
+
+    // Reset game state
+    state.score         = 0;
+    state.combo         = 0;
+    state.gameState     = 'playing';
+    state.isAnimating   = false;
     state.dangerBodies.clear();
+    state.merging.clear();
+    state.canDrop       = true;
+    state.nextBallNumber = null;
 
-    // Clear any lingering timers from a previous session.
-    if (state.spawnTimer)      clearInterval(state.spawnTimer);
-    if (state.difficultyTimer) clearInterval(state.difficultyTimer);
-    if (state.comboTimer)      clearTimeout(state.comboTimer);
+    if (state.comboTimer)        clearTimeout(state.comboTimer);
+    if (state.dropCooldownTimer) clearTimeout(state.dropCooldownTimer);
 
-    // --- Start physics runner ---
+    // Start physics
     if (runner) Runner.stop(runner);
     runner = Runner.create();
     Runner.run(runner, engine);
 
-    // --- Initial ball drop (5 balls, staggered) ---
-    for (let i = 0; i < 5; i++) {
-      setTimeout(() => createBall(), i * 300);
+    // Set up collision-based merge detection
+    setupCollisionHandler();
+
+    // Roll the first "next ball" for preview
+    rollNextBall();
+
+    // Update the UI preview
+    if (BoomTen.UI && BoomTen.UI.updateNextBall) {
+      BoomTen.UI.updateNextBall(state.nextBallNumber, COLORS[state.nextBallNumber]);
     }
 
-    // --- Auto-spawning ---
-    startSpawning();
+    // Update score display to 0
+    if (BoomTen.UI) {
+      BoomTen.UI.updateScore(0, 0, 0);
+    }
 
-    // --- Difficulty ramp (increases every 10 seconds) ---
-    state.difficultyTimer = setInterval(() => {
-      state.difficulty   += 0.1;
-      state.spawnInterval = Math.max(
-        MIN_SPAWN_INTERVAL,
-        BASE_SPAWN_INTERVAL - state.difficulty * 150
-      );
-      // Restart the spawn timer with the updated interval.
-      startSpawning();
-    }, 10000);
-
-    // --- Kick off the render loop ---
+    // Start the render loop
     requestAnimationFrame(renderLoop);
-  }
-
-  /**
-   * (Re-)start the periodic ball-spawn timer using the current
-   * state.spawnInterval.  Cancels the previous timer if one is running.
-   */
-  function startSpawning() {
-    if (state.spawnTimer) clearInterval(state.spawnTimer);
-
-    state.spawnTimer = setInterval(() => {
-      if (state.gameState === 'playing' && !state.isAnimating) {
-        createBall();
-      }
-    }, state.spawnInterval);
   }
 
   // ---------------------------------------------------------------------------
   // Render loop
   // ---------------------------------------------------------------------------
 
-  /**
-   * Main render callback – called once per animation frame while playing or
-   * paused.  Clears the canvas, draws the danger line, then draws every live
-   * ball with shadow, gradient fill, optional selection glow and number label.
-   * Finally delegates particle rendering to BoomTen.Effects (if loaded).
-   */
   function renderLoop() {
-    // Only render during active play or while the game is paused (so the frozen
-    // frame is still visible).
     if (state.gameState !== 'playing' && state.gameState !== 'paused') return;
 
-    // --- Clear the canvas ---
+    // Clear the canvas
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
     // --- Danger line ---
@@ -414,70 +498,77 @@ window.BoomTen.Game = (function () {
     ctx.moveTo(0, dangerY);
     ctx.lineTo(canvasWidth, dangerY);
     ctx.stroke();
-    ctx.setLineDash([]); // reset dash pattern
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // --- Drop zone indicator ---
+    const dropZoneY = canvasHeight * DROP_ZONE_HEIGHT_PERCENT;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0, 212, 255, 0.15)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 10]);
+    ctx.beginPath();
+    ctx.moveTo(0, dropZoneY);
+    ctx.lineTo(canvasWidth, dropZoneY);
+    ctx.stroke();
+    ctx.setLineDash([]);
     ctx.restore();
 
     // --- Balls ---
     balls.forEach(body => {
-      const { number, color, radius, selected } = body.gameData;
+      const { number, color, radius } = body.gameData;
       const pos = body.position;
 
       ctx.save();
 
-      // -- Drop shadow (offset circle drawn in translucent black) --
+      // Drop shadow
       ctx.beginPath();
       ctx.arc(pos.x + 2, pos.y + 2, radius, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
       ctx.fill();
 
-      // -- Ball body (radial gradient for a 3-D sheen) --
+      // Ball body (radial gradient for 3D sheen)
       const gradient = ctx.createRadialGradient(
-        pos.x - radius * 0.3,  // highlight origin x (upper-left)
-        pos.y - radius * 0.3,  // highlight origin y
-        radius * 0.1,           // inner circle radius
-        pos.x,                  // outer circle centre x
-        pos.y,                  // outer circle centre y
-        radius                  // outer circle radius
+        pos.x - radius * 0.3,
+        pos.y - radius * 0.3,
+        radius * 0.1,
+        pos.x,
+        pos.y,
+        radius
       );
-      gradient.addColorStop(0, lightenColor(color, 40)); // bright highlight
-      gradient.addColorStop(1, color);                   // base colour at edge
+      gradient.addColorStop(0, lightenColor(color, 40));
+      gradient.addColorStop(1, color);
 
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
       ctx.fillStyle = gradient;
       ctx.fill();
 
-      // -- Selection glow (golden ring + canvas shadow blur) --
-      if (selected) {
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, radius + 4, 0, Math.PI * 2);
-        ctx.strokeStyle  = '#FFD700';
-        ctx.lineWidth    = 3;
-        ctx.shadowColor  = '#FFD700';
-        ctx.shadowBlur   = 15;
-        ctx.stroke();
-        ctx.shadowBlur   = 0; // reset before next draw call
-      }
-
-      // -- Number label (centred white text with a subtle text shadow) --
-      ctx.fillStyle    = '#FFFFFF';
-      ctx.font         = `bold ${radius * 0.9}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+      // Number label (centred white text)
+      ctx.fillStyle    = number === 2048 ? '#0A0E27' : '#FFFFFF';
+      const fontSize = number >= 1024 ? radius * 0.55 : number >= 100 ? radius * 0.65 : radius * 0.85;
+      ctx.font         = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
       ctx.textAlign    = 'center';
       ctx.textBaseline = 'middle';
       ctx.shadowColor  = 'rgba(0, 0, 0, 0.5)';
       ctx.shadowBlur   = 3;
-      ctx.fillText(number, pos.x, pos.y + 1); // +1 px for optical centring
+      ctx.fillText(number, pos.x, pos.y + 1);
       ctx.shadowBlur   = 0;
 
       ctx.restore();
     });
 
-    // --- Danger-zone check (only while actively playing) ---
+    // --- Drop preview ghost (rendered by BoomTen.Drop if loaded) ---
+    if (BoomTen.Drop && BoomTen.Drop.renderPreview) {
+      BoomTen.Drop.renderPreview(ctx);
+    }
+
+    // --- Danger-zone check ---
     if (state.gameState === 'playing') {
       checkDangerZone();
     }
 
-    // --- Particle effects (handled by BoomTen.Effects if loaded) ---
+    // --- Particle effects ---
     if (BoomTen.Effects) {
       BoomTen.Effects.render(ctx);
     }
@@ -492,13 +583,6 @@ window.BoomTen.Game = (function () {
   // Danger zone
   // ---------------------------------------------------------------------------
 
-  /**
-   * Inspect every ball.  If a ball's top edge is above the danger line AND it
-   * is nearly stationary, track when it first entered that state.  If the ball
-   * stays there longer than DANGER_TIME_LIMIT the game ends.
-   *
-   * A ball that moves back below the danger line has its tracking entry cleared.
-   */
   function checkDangerZone() {
     const dangerY = canvasHeight * DANGER_LINE_PERCENT;
     const now     = Date.now();
@@ -507,10 +591,8 @@ window.BoomTen.Game = (function () {
       const topEdge = body.position.y - body.gameData.radius;
       const id      = body.gameData.id;
 
-      // A ball is "stuck" above the line if it has negligible velocity.
       if (topEdge < dangerY && body.speed < 0.5) {
         if (!state.dangerBodies.has(id)) {
-          // First frame the ball is seen in this state – record timestamp.
           state.dangerBodies.set(id, now);
         } else {
           const elapsed = now - state.dangerBodies.get(id);
@@ -519,7 +601,6 @@ window.BoomTen.Game = (function () {
           }
         }
       } else {
-        // Ball is safe – remove any existing danger tracking entry.
         state.dangerBodies.delete(id);
       }
     });
@@ -529,93 +610,42 @@ window.BoomTen.Game = (function () {
   // Game over
   // ---------------------------------------------------------------------------
 
-  /**
-   * Transition to the 'gameover' state.
-   * Stops all timers and the physics runner, persists the best score, then
-   * delegates UI notification to BoomTen.UI.
-   */
   function gameOver() {
-    if (state.gameState === 'gameover') return; // guard against double-calls
+    if (state.gameState === 'gameover') return;
 
     state.gameState = 'gameover';
 
-    // Stop all recurring timers.
-    if (state.spawnTimer)      clearInterval(state.spawnTimer);
-    if (state.difficultyTimer) clearInterval(state.difficultyTimer);
-    if (state.comboTimer)      clearTimeout(state.comboTimer);
+    if (state.comboTimer)        clearTimeout(state.comboTimer);
+    if (state.dropCooldownTimer) clearTimeout(state.dropCooldownTimer);
 
-    // Stop the physics simulation.
+    // Stop physics
     if (runner) Runner.stop(runner);
 
-    // Persist best score.
+    // Remove collision handler
+    Events.off(engine, 'collisionStart', onCollisionStart);
+
+    // Persist best score
     if (state.score > state.bestScore) {
       state.bestScore = state.score;
       localStorage.setItem('boomten_best', state.bestScore.toString());
     }
 
-    // Notify the UI layer.
+    // Notify the UI layer
     if (BoomTen.UI) {
       BoomTen.UI.showGameOver(state.score, state.bestScore);
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Scoring
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Award points for a successful ball-removal action.
-   *
-   * Formula:
-   *   base   = 10 × selectedCount
-   *   points = floor(base × (1 + combo × 0.5))
-   *
-   * The combo counter is incremented on every call and automatically resets
-   * 1.5 seconds after the last call.
-   *
-   * @param {number} selectedCount - Number of balls removed in this action.
-   * @returns {number} Points awarded this action.
-   */
-  function addScore(selectedCount) {
-    const base             = 10 * selectedCount;
-    const comboMultiplier  = 1 + (state.combo * 0.5);
-    const points           = Math.floor(base * comboMultiplier);
-
-    state.score += points;
-
-    // Increment combo and (re-)arm the reset timer.
-    state.combo++;
-    if (state.comboTimer) clearTimeout(state.comboTimer);
-    state.comboTimer = setTimeout(() => {
-      state.combo = 0;
-    }, 1500);
-
-    // Notify the UI layer.
-    if (BoomTen.UI) {
-      BoomTen.UI.updateScore(state.score, state.combo, points);
-    }
-
-    return points;
-  }
-
-  // ---------------------------------------------------------------------------
   // Pause / resume
   // ---------------------------------------------------------------------------
 
-  /**
-   * Pause the physics simulation.  Render loop continues (frozen frame).
-   * No-op if the game is not currently playing.
-   */
   function pause() {
     if (state.gameState !== 'playing') return;
     state.gameState = 'paused';
     if (runner) Runner.stop(runner);
   }
 
-  /**
-   * Resume the physics simulation after a pause.
-   * No-op if the game is not currently paused.
-   */
   function resume() {
     if (state.gameState !== 'paused') return;
     state.gameState = 'playing';
@@ -627,16 +657,6 @@ window.BoomTen.Game = (function () {
   // Utility
   // ---------------------------------------------------------------------------
 
-  /**
-   * Return a lightened version of a CSS hex colour string.
-   *
-   * Each RGB channel is increased by `percent` × 2.55 (i.e., percent is on a
-   * 0–100 scale) and clamped to 255.
-   *
-   * @param {string} hex     - Hex colour, e.g. '#FF6B6B'.
-   * @param {number} percent - Amount to lighten (0–100).
-   * @returns {string} CSS rgb() colour string.
-   */
   function lightenColor(hex, percent) {
     const clean = hex.replace('#', '');
     const num   = parseInt(clean, 16);
@@ -654,64 +674,28 @@ window.BoomTen.Game = (function () {
   // ---------------------------------------------------------------------------
 
   return {
-    /** Initialise the engine and canvas.  Call once at startup. */
     init,
-
-    /** Reset state and begin a new game. */
     startGame,
-
-    /** Create a ball at an optional x position. */
-    createBall,
-
-    /** Remove a single ball from the world. */
+    createBallAt,
+    rollNextBall,
     removeBall,
-
-    /** Remove multiple balls from the world in one pass. */
     removeBalls,
-
-    /** Award points and update the combo counter. */
-    addScore,
-
-    /** Pause physics (render loop keeps running). */
     pause,
-
-    /** Resume physics after a pause. */
     resume,
-
-    /** Immediately end the current game. */
     gameOver,
 
-    // --- Read-only accessors (using ES5-style getters on the return object) ---
-
-    /** Current mutable game state.  Read-only reference; do not replace. */
     get state()       { return state; },
-
-    /** Live array of all active ball bodies. */
     get balls()       { return balls; },
-
-    /** The Matter.js Engine instance. */
     get engine()      { return engine; },
-
-    /** Current logical canvas width in CSS pixels. */
     get canvasWidth() { return canvasWidth; },
-
-    /** Current logical canvas height in CSS pixels. */
     get canvasHeight(){ return canvasHeight; },
-
-    /** The 2-D rendering context. */
     get ctx()         { return ctx; },
 
-    // --- Constants exposed for use by other modules ---
-
-    /** Ball colour map (number → hex string). */
     COLORS,
-
-    /** Danger-line position as a fraction of canvas height from the top. */
     DANGER_LINE_PERCENT,
-
-    /** Maximum number of simultaneous balls allowed. */
+    DROP_ZONE_HEIGHT_PERCENT,
+    DROP_COOLDOWN,
     MAX_BALLS,
+    ballRadius,
   };
 })();
-
-// BoomTen namespace is already on window – no extra assignment needed.
