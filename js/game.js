@@ -1,4 +1,4 @@
-// game.js - BOOM TEN Physics Engine Core (2048 + Suika Game Hybrid)
+// game.js - BALL 2048 Physics Engine Core (2048 + Suika Game Hybrid)
 // Uses Matter.js globals: Matter.Engine, Matter.World, Matter.Bodies, Matter.Body,
 //                         Matter.Events, Matter.Runner, Matter.Query, Matter.Composite
 //

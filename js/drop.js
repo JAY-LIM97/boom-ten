@@ -1,4 +1,4 @@
-// drop.js - BOOM TEN Drop Control (2048 + Suika Game Hybrid)
+// drop.js - BALL 2048 Drop Control (2048 + Suika Game Hybrid)
 // Handles player input for choosing drop position and releasing balls.
 // Replaces the old drag.js module.
 

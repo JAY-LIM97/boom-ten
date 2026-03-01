@@ -1,5 +1,5 @@
-// service-worker.js - BOOM TEN PWA Offline Support
-const CACHE_NAME = 'boomten-v3';
+// service-worker.js - BALL 2048 PWA Offline Support
+const CACHE_NAME = 'ball2048-v1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

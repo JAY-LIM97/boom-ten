@@ -1,4 +1,4 @@
-// ui.js - BOOM TEN UI Controller (2048 + Suika Game Hybrid)
+// ui.js - BALL 2048 UI Controller (2048 + Suika Game Hybrid)
 window.BoomTen = window.BoomTen || {};
 
 window.BoomTen.UI = (function () {

@@ -1,4 +1,4 @@
-// effects.js - BOOM TEN Visual Effects System
+// effects.js - BALL 2048 Visual Effects System
 window.BoomTen = window.BoomTen || {};
 
 window.BoomTen.Effects = (function() {

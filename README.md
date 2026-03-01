@@ -1,4 +1,4 @@
-# BOOM TEN (붐텐) - 2048 + 수박게임 하이브리드
+# BALL 2048 - 숫자 합체 퍼즐
 
 > 같은 숫자를 합쳐 2048을 만들어라! 물리 기반 합체 퍼즐 게임
 
@@ -91,4 +91,4 @@ MIT License
 
 ---
 
-**BOOM TEN** - 2048 × Suika Game | Made with Matter.js
+**BALL 2048** - 2048 × Suika Game | Made with Matter.js
