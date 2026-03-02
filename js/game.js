@@ -19,20 +19,38 @@ window.BoomTen.Game = (function () {
   // Constants
   // ---------------------------------------------------------------------------
 
-  /** Planet colors keyed by number value (powers of 2). */
+  /** Planet colors keyed by number value (powers of 2). 30 levels: 2^0 through 2^29. */
   const PLANET_COLORS = {
-    1:    '#8B7355',   // asteroid brown-gray
-    2:    '#C0C0C0',   // moon silver
-    4:    '#C1440E',   // mars rust
-    8:    '#1E90FF',   // earth blue
-    16:   '#3355FF',   // neptune deep blue
-    32:   '#DAA520',   // saturn gold
-    64:   '#D2691E',   // jupiter orange-brown
-    128:  '#FF4500',   // red giant
-    256:  '#4488FF',   // blue star
-    512:  '#FFD700',   // supergiant gold
-    1024: '#E0E0FF',   // neutron star white-blue
-    2048: '#FF6B00',   // black hole accretion orange
+    1:         '#8B6914',   // 작은 유성
+    2:         '#A8D8EA',   // 얼음 소행성
+    4:         '#71797E',   // 철 소행성
+    8:         '#8B7355',   // 소행성
+    16:        '#C2B280',   // 왜소 행성
+    32:        '#C0C0C0',   // 위성 (달)
+    64:        '#8C8C8C',   // 수성
+    128:       '#E8B84B',   // 금성
+    256:       '#1E90FF',   // 지구
+    512:       '#C1440E',   // 화성
+    1024:      '#D2691E',   // 목성
+    2048:      '#DAA520',   // 토성
+    4096:      '#48D1CC',   // 천왕성
+    8192:      '#3355FF',   // 해왕성
+    16384:     '#8B5CF6',   // 거대 가스 행성
+    32768:     '#2ECC71',   // 슈퍼 지구
+    65536:     '#FF4500',   // 용암 행성
+    131072:    '#B0C4DE',   // 얼음 거인
+    262144:    '#A8A8B8',   // 금속 행성
+    524288:    '#B9F2FF',   // 다이아몬드 행성
+    1048576:   '#E0E0FF',   // 중성자별
+    2097152:   '#FFFDE0',   // 백색왜성
+    4194304:   '#CC4444',   // 적색왜성
+    8388608:   '#FFD700',   // 황색왜성
+    16777216:  '#4488FF',   // 청색거성
+    33554432:  '#FF4500',   // 적색거성
+    67108864:  '#FFB800',   // 초거성
+    134217728: '#FF6B00',   // 블랙홀
+    268435456: '#BB66FF',   // 퀘이사
+    536870912: '#7B68EE',   // 은하
   };
   /** Backward-compat alias */
   const COLORS = PLANET_COLORS;
@@ -78,12 +96,13 @@ window.BoomTen.Game = (function () {
 
   /**
    * Calculate ball radius from its number value.
-   * Larger numbers = bigger balls. Uses log2 for 2048-style scaling.
+   * Larger numbers = bigger balls. Uses log2 for scaling across 30 levels.
+   * Range: 14px (value 1) to ~72px (value 536870912).
    * @param {number} number - The ball's number value (power of 2).
    * @returns {number} Radius in pixels.
    */
   function ballRadius(number) {
-    return 16 + Math.log2(Math.max(1, number)) * 4 + 2;
+    return 14 + Math.log2(Math.max(1, number)) * 2;
   }
 
   // ---------------------------------------------------------------------------

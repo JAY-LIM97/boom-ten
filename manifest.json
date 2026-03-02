@@ -1,7 +1,7 @@
 {
   "name": "Planet 2048 - 행성 합체 퍼즐",
   "short_name": "Planet 2048",
-  "description": "소행성에서 블랙홀까지! 같은 행성을 합쳐라! 물리 기반 행성 합체 퍼즐",
+  "description": "유성에서 은하까지! 같은 행성을 합쳐라! 30단계 물리 기반 행성 합체 퍼즐",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",

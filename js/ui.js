@@ -204,7 +204,10 @@ window.BoomTen.UI = (function () {
    */
   function updateScore(score, combo, addedPoints) {
     if (hudScore) {
-      hudScore.textContent = score.toLocaleString();
+      // Use abbreviated format for very large numbers
+      hudScore.textContent = BoomTen.Planets && BoomTen.Planets.formatNum
+        ? BoomTen.Planets.formatNum(score)
+        : score.toLocaleString();
       hudScore.classList.remove('pop');
       void hudScore.offsetWidth;
       hudScore.classList.add('pop');
@@ -236,7 +239,8 @@ window.BoomTen.UI = (function () {
    */
   function updateNextBall(number, color) {
     if (!hudNextBall) return;
-    hudNextBall.textContent = number;
+    hudNextBall.textContent = BoomTen.Planets && BoomTen.Planets.formatNum
+      ? BoomTen.Planets.formatNum(number) : number;
     hudNextBall.style.backgroundColor = color;
 
     // Show planet name below the preview
@@ -252,8 +256,10 @@ window.BoomTen.UI = (function () {
 
   // ─── showGameOver ─────────────────────────────────────────────────────────
   function showGameOver(score, best) {
-    if (elFinalScore) elFinalScore.textContent = score.toLocaleString();
-    if (elBestScore)  elBestScore.textContent  = best.toLocaleString();
+    var fmt = BoomTen.Planets && BoomTen.Planets.formatNum
+      ? BoomTen.Planets.formatNum : function(n) { return n.toLocaleString(); };
+    if (elFinalScore) elFinalScore.textContent = fmt(score);
+    if (elBestScore)  elBestScore.textContent  = fmt(best);
 
     setTimeout(() => {
       showScreen('gameover');
