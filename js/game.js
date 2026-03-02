@@ -97,13 +97,14 @@ window.BoomTen.Game = (function () {
   /**
    * Calculate ball radius from its number value.
    * Larger numbers = bigger balls. Uses log2 for scaling across 30 levels.
-   * Base formula × 1.5 for Suika-like gameplay tension.
-   * Range: ~21px (value 1) to ~108px (value 536870912).
+   * Geometric scaling: base × 2.2 × 1.1^level
+   * Each merge level is 1.1× the previous size.
    * @param {number} number - The ball's number value (power of 2).
    * @returns {number} Radius in pixels.
    */
   function ballRadius(number) {
-    return (14 + Math.log2(Math.max(1, number)) * 2) * 2.0;
+    const level = Math.log2(Math.max(1, number));
+    return 14 * 2.2 * Math.pow(1.1, level);
   }
 
   // ---------------------------------------------------------------------------
