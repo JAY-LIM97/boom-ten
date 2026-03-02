@@ -129,6 +129,9 @@ window.BoomTen.Game = (function () {
   /** Logical height of the canvas in CSS pixels. */
   let canvasHeight;
 
+  /** Pre-rendered space background (offscreen canvas). */
+  let bgCanvas = null;
+
   /**
    * Live array of all active ball physics bodies.
    * Each body has a `.gameData` property (see createBallAt).
@@ -200,7 +203,82 @@ window.BoomTen.Game = (function () {
     canvas.width  = canvasWidth;
     canvas.height = canvasHeight;
 
+    generateSpaceBg();
     rebuildWalls();
+  }
+
+  /**
+   * Pre-render a subtle space background onto an offscreen canvas.
+   * Contains: deep-space gradient, nebula glow, and twinkling stars.
+   * Called once on resize — drawn each frame via drawImage (fast blit).
+   */
+  function generateSpaceBg() {
+    bgCanvas = document.createElement('canvas');
+    bgCanvas.width = canvasWidth;
+    bgCanvas.height = canvasHeight;
+    const bg = bgCanvas.getContext('2d');
+
+    // 1. Deep space base gradient (dark navy → slight purple tint)
+    const baseGrad = bg.createLinearGradient(0, 0, 0, canvasHeight);
+    baseGrad.addColorStop(0, '#06081A');
+    baseGrad.addColorStop(0.4, '#0A0E27');
+    baseGrad.addColorStop(0.7, '#0D1030');
+    baseGrad.addColorStop(1, '#080C22');
+    bg.fillStyle = baseGrad;
+    bg.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    // 2. Subtle nebula glow patches
+    const nebulae = [
+      { x: canvasWidth * 0.2, y: canvasHeight * 0.25, r: canvasWidth * 0.5, color: '80, 40, 140' },
+      { x: canvasWidth * 0.8, y: canvasHeight * 0.7, r: canvasWidth * 0.4, color: '20, 60, 120' },
+      { x: canvasWidth * 0.5, y: canvasHeight * 0.5, r: canvasWidth * 0.6, color: '40, 20, 80' },
+    ];
+    nebulae.forEach(n => {
+      const nebGrad = bg.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r);
+      nebGrad.addColorStop(0, 'rgba(' + n.color + ', 0.06)');
+      nebGrad.addColorStop(0.5, 'rgba(' + n.color + ', 0.025)');
+      nebGrad.addColorStop(1, 'rgba(' + n.color + ', 0)');
+      bg.fillStyle = nebGrad;
+      bg.fillRect(0, 0, canvasWidth, canvasHeight);
+    });
+
+    // 3. Stars — layered sizes for depth
+    const starLayers = [
+      { count: 120, minR: 0.3, maxR: 0.8, minA: 0.3, maxA: 0.6 },   // distant dim
+      { count: 60,  minR: 0.6, maxR: 1.2, minA: 0.5, maxA: 0.8 },   // medium
+      { count: 20,  minR: 1.0, maxR: 1.8, minA: 0.7, maxA: 1.0 },   // bright close
+    ];
+    starLayers.forEach(layer => {
+      for (let i = 0; i < layer.count; i++) {
+        const sx = Math.random() * canvasWidth;
+        const sy = Math.random() * canvasHeight;
+        const sr = layer.minR + Math.random() * (layer.maxR - layer.minR);
+        const sa = layer.minA + Math.random() * (layer.maxA - layer.minA);
+
+        // Slight color variation (warm white, cool white, blue tint)
+        const tint = Math.random();
+        let starColor;
+        if (tint < 0.6) starColor = '255, 255, 255';
+        else if (tint < 0.8) starColor = '200, 220, 255';
+        else starColor = '255, 240, 220';
+
+        bg.beginPath();
+        bg.arc(sx, sy, sr, 0, Math.PI * 2);
+        bg.fillStyle = 'rgba(' + starColor + ', ' + sa + ')';
+        bg.fill();
+
+        // Soft glow for brighter stars
+        if (sr > 1.0) {
+          const glowGrad = bg.createRadialGradient(sx, sy, 0, sx, sy, sr * 3);
+          glowGrad.addColorStop(0, 'rgba(' + starColor + ', ' + (sa * 0.25) + ')');
+          glowGrad.addColorStop(1, 'rgba(' + starColor + ', 0)');
+          bg.fillStyle = glowGrad;
+          bg.beginPath();
+          bg.arc(sx, sy, sr * 3, 0, Math.PI * 2);
+          bg.fill();
+        }
+      }
+    });
   }
 
   function rebuildWalls() {
@@ -511,8 +589,12 @@ window.BoomTen.Game = (function () {
   function renderLoop() {
     if (state.gameState !== 'playing' && state.gameState !== 'paused') return;
 
-    // Clear the canvas
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    // Draw space background (pre-rendered offscreen canvas)
+    if (bgCanvas) {
+      ctx.drawImage(bgCanvas, 0, 0);
+    } else {
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    }
 
     // --- Danger line ---
     const dangerY = canvasHeight * DANGER_LINE_PERCENT;

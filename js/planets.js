@@ -93,40 +93,98 @@ window.BoomTen.Planets = (function () {
     return String(n);
   }
 
-  /** Draw a basic sphere with radial gradient */
+  /** Draw a polished sphere with shadow, gradient, outline, specular highlight, and rim light */
   function drawSphere(ctx, x, y, r, colorLight, colorDark) {
+    // 1. Soft drop shadow — gives depth separation from background
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowBlur = r * 0.5;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = r * 0.12;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = colorDark;
+    ctx.fill();
+    ctx.restore();
+
+    // 2. Main sphere with 3-stop gradient for richer depth
     var grad = ctx.createRadialGradient(
       x - r * 0.3, y - r * 0.3, r * 0.05,
-      x, y, r
+      x + r * 0.05, y + r * 0.05, r
     );
-    grad.addColorStop(0, colorLight);
+    grad.addColorStop(0, lighten(colorLight, 25));
+    grad.addColorStop(0.55, colorLight);
     grad.addColorStop(1, colorDark);
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fillStyle = grad;
     ctx.fill();
+
+    // 3. Thin outline — clean edge definition
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.18)';
+    ctx.lineWidth = Math.max(1, r * 0.03);
+    ctx.stroke();
+
+    // 4. Specular highlight (glossy spot, top-left)
+    var specGrad = ctx.createRadialGradient(
+      x - r * 0.32, y - r * 0.35, 0,
+      x - r * 0.32, y - r * 0.35, r * 0.45
+    );
+    specGrad.addColorStop(0, 'rgba(255, 255, 255, 0.55)');
+    specGrad.addColorStop(0.45, 'rgba(255, 255, 255, 0.12)');
+    specGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = specGrad;
+    ctx.fill();
+
+    // 5. Rim light — subtle edge glow for 3D pop
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.clip();
+    var rimGrad = ctx.createRadialGradient(x, y, r * 0.82, x, y, r);
+    rimGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+    rimGrad.addColorStop(1, 'rgba(255, 255, 255, 0.1)');
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = rimGrad;
+    ctx.fill();
+    ctx.restore();
   }
 
-  /** Draw number label centered on a body */
+  /** Draw number label centered on a body — crisp text with outline for readability */
   function drawLabel(ctx, x, y, r, number, style) {
     var text = formatNum(number);
     var len = text.length;
     var dark = style === 'dark';
     var glow = style === 'glow';
 
-    ctx.fillStyle = dark ? '#0A0E27' : '#FFFFFF';
     var fontSize = len >= 4 ? r * 0.42 : len >= 3 ? r * 0.52 : r * 0.7;
-    ctx.font = 'bold ' + Math.max(8, fontSize) + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    fontSize = Math.max(8, fontSize);
+    ctx.font = 'bold ' + fontSize + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
+    // Text outline for crisp readability
+    ctx.save();
+    ctx.strokeStyle = dark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = Math.max(2, fontSize * 0.08);
+    ctx.lineJoin = 'round';
+    ctx.strokeText(text, x, y + 1);
+    ctx.restore();
+
+    // Fill with shadow
     if (glow) {
       ctx.shadowColor = '#FF6B00';
-      ctx.shadowBlur = 6;
+      ctx.shadowBlur = 8;
     } else {
-      ctx.shadowColor = dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur = 3;
+      ctx.shadowColor = dark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.7)';
+      ctx.shadowBlur = 4;
     }
+    ctx.fillStyle = dark ? '#1A1E37' : '#FFFFFF';
     ctx.fillText(text, x, y + 1);
     ctx.shadowBlur = 0;
   }
