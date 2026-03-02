@@ -204,16 +204,6 @@ window.BoomTen.Planets = (function () {
       ctx.arc(x + s.dx * r, y + s.dy * r, s.sr * r, 0, Math.PI * 2);
       ctx.fill();
     });
-    // Fiery trail hint
-    ctx.save();
-    ctx.globalAlpha = 0.25;
-    ctx.strokeStyle = '#FF8C00';
-    ctx.lineWidth = r * 0.12;
-    ctx.beginPath();
-    ctx.moveTo(x + r * 0.5, y - r * 0.3);
-    ctx.quadraticCurveTo(x + r * 1.2, y - r * 0.8, x + r * 1.6, y - r * 1.1);
-    ctx.stroke();
-    ctx.restore();
     drawLabel(ctx, x, y, r, 1, 'light');
   }
 
