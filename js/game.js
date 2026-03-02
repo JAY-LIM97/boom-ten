@@ -1,4 +1,4 @@
-// game.js - BALL 2048 Physics Engine Core (2048 + Suika Game Hybrid)
+// game.js - Planet 2048 Physics Engine Core (2048 + Suika Game Hybrid)
 // Uses Matter.js globals: Matter.Engine, Matter.World, Matter.Bodies, Matter.Body,
 //                         Matter.Events, Matter.Runner, Matter.Query, Matter.Composite
 //
@@ -19,21 +19,23 @@ window.BoomTen.Game = (function () {
   // Constants
   // ---------------------------------------------------------------------------
 
-  /** Ball fill colors keyed by number value (powers of 2). */
-  const COLORS = {
-    1:    '#FF6B6B',   // red
-    2:    '#FFA06B',   // orange
-    4:    '#FFD93D',   // yellow
-    8:    '#6BCB77',   // green
-    16:   '#4D96FF',   // blue
-    32:   '#9B59B6',   // purple
-    64:   '#FF85B3',   // pink
-    128:  '#00D2D3',   // teal
-    256:  '#FF6348',   // coral
-    512:  '#FFD700',   // gold
-    1024: '#E056A0',   // magenta
-    2048: '#FFFFFF',   // white (ultimate)
+  /** Planet colors keyed by number value (powers of 2). */
+  const PLANET_COLORS = {
+    1:    '#8B7355',   // asteroid brown-gray
+    2:    '#C0C0C0',   // moon silver
+    4:    '#C1440E',   // mars rust
+    8:    '#1E90FF',   // earth blue
+    16:   '#3355FF',   // neptune deep blue
+    32:   '#DAA520',   // saturn gold
+    64:   '#D2691E',   // jupiter orange-brown
+    128:  '#FF4500',   // red giant
+    256:  '#4488FF',   // blue star
+    512:  '#FFD700',   // supergiant gold
+    1024: '#E0E0FF',   // neutron star white-blue
+    2048: '#FF6B00',   // black hole accretion orange
   };
+  /** Backward-compat alias */
+  const COLORS = PLANET_COLORS;
 
   /**
    * Spawn-weight table for player drops.
@@ -514,48 +516,38 @@ window.BoomTen.Game = (function () {
     ctx.setLineDash([]);
     ctx.restore();
 
-    // --- Balls ---
+    // --- Balls (planet rendering) ---
     balls.forEach(body => {
-      const { number, color, radius } = body.gameData;
+      const { number, radius } = body.gameData;
       const pos = body.position;
 
-      ctx.save();
-
-      // Drop shadow
-      ctx.beginPath();
-      ctx.arc(pos.x + 2, pos.y + 2, radius, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-      ctx.fill();
-
-      // Ball body (radial gradient for 3D sheen)
-      const gradient = ctx.createRadialGradient(
-        pos.x - radius * 0.3,
-        pos.y - radius * 0.3,
-        radius * 0.1,
-        pos.x,
-        pos.y,
-        radius
-      );
-      gradient.addColorStop(0, lightenColor(color, 40));
-      gradient.addColorStop(1, color);
-
-      ctx.beginPath();
-      ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = gradient;
-      ctx.fill();
-
-      // Number label (centred white text)
-      ctx.fillStyle    = number === 2048 ? '#0A0E27' : '#FFFFFF';
-      const fontSize = number >= 1024 ? radius * 0.55 : number >= 100 ? radius * 0.65 : radius * 0.85;
-      ctx.font         = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
-      ctx.textAlign    = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.shadowColor  = 'rgba(0, 0, 0, 0.5)';
-      ctx.shadowBlur   = 3;
-      ctx.fillText(number, pos.x, pos.y + 1);
-      ctx.shadowBlur   = 0;
-
-      ctx.restore();
+      if (BoomTen.Planets) {
+        BoomTen.Planets.drawPlanet(ctx, pos.x, pos.y, radius, number);
+      } else {
+        // Fallback: simple gradient circle
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(pos.x + 2, pos.y + 2, radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fill();
+        const color = COLORS[number] || '#AAAAAA';
+        const grad = ctx.createRadialGradient(
+          pos.x - radius * 0.3, pos.y - radius * 0.3, radius * 0.1,
+          pos.x, pos.y, radius
+        );
+        grad.addColorStop(0, lightenColor(color, 40));
+        grad.addColorStop(1, color);
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = `bold ${radius * 0.7}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(number, pos.x, pos.y + 1);
+        ctx.restore();
+      }
     });
 
     // --- Drop preview ghost (rendered by BoomTen.Drop if loaded) ---

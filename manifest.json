@@ -1,7 +1,7 @@
 {
-  "name": "BALL 2048 - 숫자 합체 퍼즐",
-  "short_name": "BALL 2048",
-  "description": "같은 숫자를 합쳐 2048을 만들어라! 2048 + 수박게임 물리 퍼즐",
+  "name": "Planet 2048 - 행성 합체 퍼즐",
+  "short_name": "Planet 2048",
+  "description": "소행성에서 블랙홀까지! 같은 행성을 합쳐라! 물리 기반 행성 합체 퍼즐",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",

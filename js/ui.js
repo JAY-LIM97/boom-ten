@@ -1,4 +1,4 @@
-// ui.js - BALL 2048 UI Controller (2048 + Suika Game Hybrid)
+// ui.js - Planet 2048 UI Controller (2048 + Suika Game Hybrid)
 window.BoomTen = window.BoomTen || {};
 
 window.BoomTen.UI = (function () {
@@ -11,6 +11,7 @@ window.BoomTen.UI = (function () {
   let hudCombo;        // #hud-combo
   let hudComboBlock;   // #hud-combo-block
   let hudNextBall;     // #hud-next-ball
+  let hudNextName;     // #hud-next-name (planet name label)
   let btnPause;        // #btn-pause
 
   let elFinalScore;    // #final-score
@@ -30,6 +31,7 @@ window.BoomTen.UI = (function () {
     hudCombo      = document.getElementById('hud-combo');
     hudComboBlock = document.getElementById('hud-combo-block');
     hudNextBall   = document.getElementById('hud-next-ball');
+    hudNextName   = document.getElementById('hud-next-name');
     btnPause      = document.getElementById('btn-pause');
 
     elFinalScore = document.getElementById('final-score');
@@ -236,6 +238,11 @@ window.BoomTen.UI = (function () {
     if (!hudNextBall) return;
     hudNextBall.textContent = number;
     hudNextBall.style.backgroundColor = color;
+
+    // Show planet name below the preview
+    if (hudNextName && BoomTen.Planets) {
+      hudNextName.textContent = BoomTen.Planets.PLANET_NAMES_KO[number] || '';
+    }
 
     // Pop animation
     hudNextBall.classList.remove('pop');

@@ -1,9 +1,9 @@
-// index.js - BALL 2048 Main Entry Point (2048 + Suika Game Hybrid)
+// index.js - Planet 2048 Main Entry Point (2048 + Suika Game Hybrid)
 (function () {
   'use strict';
 
   document.addEventListener('DOMContentLoaded', () => {
-    console.log('BALL 2048 - Initializing...');
+    console.log('Planet 2048 - Initializing...');
 
     const canvas = document.getElementById('game-canvas');
     if (!canvas) {
@@ -43,7 +43,7 @@
 
     // ── Show splash ────────────────────────────────────────────────────────
     BoomTen.UI.showScreen('splash');
-    console.log('BALL 2048 ready!');
+    console.log('Planet 2048 ready!');
 
     // ── PWA Service Worker ─────────────────────────────────────────────────
     if ('serviceWorker' in navigator) {

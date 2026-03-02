@@ -1,4 +1,4 @@
-// drop.js - BALL 2048 Drop Control (2048 + Suika Game Hybrid)
+// drop.js - Planet 2048 Drop Control (2048 + Suika Game Hybrid)
 // Handles player input for choosing drop position and releasing balls.
 // Replaces the old drag.js module.
 
@@ -175,24 +175,25 @@ window.BoomTen.Drop = (function () {
     renderCtx.stroke();
     renderCtx.setLineDash([]);
 
-    // Ghost ball (semi-transparent)
-    const color = game.COLORS[number] || '#AAAAAA';
-    renderCtx.globalAlpha = game.state.canDrop ? 0.5 : 0.2;
+    // Ghost ball (semi-transparent planet preview)
+    const alpha = game.state.canDrop ? 0.5 : 0.2;
 
-    // Ball body
-    renderCtx.beginPath();
-    renderCtx.arc(clampedX, dropZoneY, radius, 0, Math.PI * 2);
-    renderCtx.fillStyle = color;
-    renderCtx.fill();
-
-    // Number label
-    renderCtx.globalAlpha = game.state.canDrop ? 0.7 : 0.3;
-    renderCtx.fillStyle = '#FFFFFF';
-    const fontSize = number >= 100 ? radius * 0.6 : radius * 0.85;
-    renderCtx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
-    renderCtx.textAlign = 'center';
-    renderCtx.textBaseline = 'middle';
-    renderCtx.fillText(number, clampedX, dropZoneY + 1);
+    if (BoomTen.Planets) {
+      BoomTen.Planets.drawPlanetPreview(renderCtx, clampedX, dropZoneY, radius, number, alpha);
+    } else {
+      // Fallback: simple circle
+      const color = game.COLORS[number] || '#AAAAAA';
+      renderCtx.globalAlpha = alpha;
+      renderCtx.beginPath();
+      renderCtx.arc(clampedX, dropZoneY, radius, 0, Math.PI * 2);
+      renderCtx.fillStyle = color;
+      renderCtx.fill();
+      renderCtx.fillStyle = '#FFFFFF';
+      renderCtx.font = `bold ${radius * 0.7}px sans-serif`;
+      renderCtx.textAlign = 'center';
+      renderCtx.textBaseline = 'middle';
+      renderCtx.fillText(number, clampedX, dropZoneY + 1);
+    }
 
     renderCtx.restore();
   }

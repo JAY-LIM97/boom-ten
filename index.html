@@ -6,14 +6,14 @@
   <meta name="theme-color" content="#0A0E27" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="BALL 2048" />
-  <meta name="description" content="같은 숫자를 합쳐 2048을 만들어라! 2048 + 수박게임 물리 퍼즐" />
+  <meta name="apple-mobile-web-app-title" content="Planet 2048" />
+  <meta name="description" content="소행성에서 블랙홀까지! 같은 행성을 합쳐라! 물리 기반 행성 합체 퍼즐" />
 
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="assets/icons/icon.svg" />
   <link rel="apple-touch-icon" href="assets/icons/icon.svg" />
 
-  <title>BALL 2048 - 숫자 합체 퍼즐</title>
+  <title>Planet 2048 - 행성 합체 퍼즐</title>
 
   <!-- Tailwind CSS (Play CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -840,22 +840,22 @@
       <!-- Logo -->
       <div class="splash-logo-wrapper">
         <div class="splash-logo-glow"></div>
-        <div class="splash-logo gradient-text logo-bounce" aria-label="BALL 2048">
-          BALL<br>2048
+        <div class="splash-logo gradient-text logo-bounce" aria-label="Planet 2048">
+          PLANET<br>2048
         </div>
       </div>
 
       <!-- Decorative merge concept -->
-      <div aria-hidden="true" style="display:flex;gap:10px;margin-bottom:6px;margin-top:-4px;">
-        <span style="background:rgba(255,107,107,0.15);border:1.5px solid rgba(255,107,107,0.4);border-radius:10px;padding:4px 11px;font-size:1rem;font-weight:900;color:#FF6B6B;">4</span>
-        <span style="background:rgba(0,212,255,0.12);border:1.5px solid rgba(0,212,255,0.3);border-radius:10px;padding:4px 11px;font-size:1rem;font-weight:900;color:#00D4FF;">+</span>
-        <span style="background:rgba(255,107,107,0.15);border:1.5px solid rgba(255,107,107,0.4);border-radius:10px;padding:4px 11px;font-size:1rem;font-weight:900;color:#FF6B6B;">4</span>
-        <span style="background:rgba(0,212,255,0.12);border:1.5px solid rgba(0,212,255,0.3);border-radius:10px;padding:4px 11px;font-size:1rem;font-weight:900;color:#00D4FF;">=</span>
-        <span style="background:rgba(255,160,107,0.15);border:1.5px solid rgba(255,160,107,0.4);border-radius:10px;padding:4px 14px;font-size:1rem;font-weight:900;color:#FFA06B;">8!</span>
+      <div aria-hidden="true" style="display:flex;gap:8px;margin-bottom:6px;margin-top:-4px;align-items:center;">
+        <span style="background:rgba(192,192,192,0.15);border:1.5px solid rgba(192,192,192,0.4);border-radius:10px;padding:4px 10px;font-size:0.85rem;font-weight:900;color:#C0C0C0;">&#127769;</span>
+        <span style="background:rgba(0,212,255,0.12);border:1.5px solid rgba(0,212,255,0.3);border-radius:10px;padding:4px 8px;font-size:0.85rem;font-weight:900;color:#00D4FF;">+</span>
+        <span style="background:rgba(192,192,192,0.15);border:1.5px solid rgba(192,192,192,0.4);border-radius:10px;padding:4px 10px;font-size:0.85rem;font-weight:900;color:#C0C0C0;">&#127769;</span>
+        <span style="background:rgba(0,212,255,0.12);border:1.5px solid rgba(0,212,255,0.3);border-radius:10px;padding:4px 8px;font-size:0.85rem;font-weight:900;color:#00D4FF;">=</span>
+        <span style="background:rgba(193,68,14,0.15);border:1.5px solid rgba(193,68,14,0.4);border-radius:10px;padding:4px 10px;font-size:0.85rem;font-weight:900;color:#C1440E;">&#127752;</span>
       </div>
 
       <!-- Subtitle -->
-      <p class="splash-subtitle">같은 숫자를 합쳐 2048을 만들어라!</p>
+      <p class="splash-subtitle">같은 행성을 합쳐 블랙홀을 만들어라!</p>
 
       <!-- CTA button -->
       <button
@@ -869,7 +869,7 @@
 
       <!-- How-to hint -->
       <p style="margin-top:18px;font-size:0.72rem;color:var(--color-text-muted);letter-spacing:0.05em;text-align:center;max-width:240px;line-height:1.6;">
-        터치해서 숫자를 떨어뜨려요 · 같은 숫자끼리 합체!
+        터치해서 행성을 떨어뜨려요 · 같은 행성끼리 합체!
       </p>
 
     </div>
@@ -903,6 +903,7 @@
       <div style="display:flex;flex-direction:column;align-items:center;min-width:50px;">
         <span class="hud-label">다음</span>
         <div id="hud-next-ball">1</div>
+        <span id="hud-next-name" style="font-size:0.5rem;color:var(--color-text-muted);margin-top:1px;white-space:nowrap;"></span>
       </div>
 
       <!-- Pause button (right) -->
@@ -943,11 +944,11 @@
 
       <!-- Title -->
       <div class="gameover-title gradient-text">GAME OVER</div>
-      <p class="gameover-subtitle">공이 위험선을 넘었어요!</p>
+      <p class="gameover-subtitle">행성이 위험선을 넘었어요!</p>
 
       <!-- Final Score -->
       <div class="score-display-block">
-        <span class="score-display-label">최고 숫자</span>
+        <span class="score-display-label">최고 행성</span>
         <span id="final-score" class="score-display-value gradient-text">0</span>
       </div>
 
@@ -1043,11 +1044,12 @@
   <!-- ════════════════════════════════════════════════════
        SCRIPTS (deferred)
   ═════════════════════════════════════════════════════ -->
-  <script defer src="js/game.js?v=4"></script>
-  <script defer src="js/drop.js?v=4"></script>
-  <script defer src="js/effects.js?v=4"></script>
-  <script defer src="js/ui.js?v=4"></script>
-  <script defer src="js/index.js?v=4"></script>
+  <script defer src="js/game.js?v=5"></script>
+  <script defer src="js/planets.js?v=5"></script>
+  <script defer src="js/drop.js?v=5"></script>
+  <script defer src="js/effects.js?v=5"></script>
+  <script defer src="js/ui.js?v=5"></script>
+  <script defer src="js/index.js?v=5"></script>
 
   <!-- Inline bootstrap (runs after all deferred scripts) -->
   <script>

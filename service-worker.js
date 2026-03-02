@@ -1,9 +1,10 @@
-// service-worker.js - BALL 2048 PWA Offline Support
-const CACHE_NAME = 'ball2048-v1';
+// service-worker.js - Planet 2048 PWA Offline Support
+const CACHE_NAME = 'planet2048-v1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './js/game.js',
+  './js/planets.js',
   './js/drop.js',
   './js/effects.js',
   './js/ui.js',
