@@ -103,7 +103,7 @@ window.BoomTen.Game = (function () {
    * @returns {number} Radius in pixels.
    */
   function ballRadius(number) {
-    return (14 + Math.log2(Math.max(1, number)) * 2) * 1.5;
+    return (14 + Math.log2(Math.max(1, number)) * 2) * 2.0;
   }
 
   // ---------------------------------------------------------------------------
