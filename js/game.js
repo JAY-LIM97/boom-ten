@@ -97,12 +97,13 @@ window.BoomTen.Game = (function () {
   /**
    * Calculate ball radius from its number value.
    * Larger numbers = bigger balls. Uses log2 for scaling across 30 levels.
-   * Range: 14px (value 1) to ~72px (value 536870912).
+   * Base formula × 1.2 for better gameplay tension.
+   * Range: ~17px (value 1) to ~86px (value 536870912).
    * @param {number} number - The ball's number value (power of 2).
    * @returns {number} Radius in pixels.
    */
   function ballRadius(number) {
-    return 14 + Math.log2(Math.max(1, number)) * 2;
+    return (14 + Math.log2(Math.max(1, number)) * 2) * 1.2;
   }
 
   // ---------------------------------------------------------------------------
@@ -153,7 +154,8 @@ window.BoomTen.Game = (function () {
     isAnimating: false,
     dangerBodies: new Map(), // Map<bodyId, timestampMs>
     // Suika/2048 merge state
-    nextBallNumber: null,
+    currentBallNumber: null,   // ball you're about to drop (ghost preview)
+    nextBallNumber: null,      // ball that comes after current (HUD preview)
     canDrop: true,
     dropCooldownTimer: null,
     merging: new Set(),      // Set<bodyId> to prevent double-processing
@@ -468,8 +470,9 @@ window.BoomTen.Game = (function () {
     state.isAnimating   = false;
     state.dangerBodies.clear();
     state.merging.clear();
-    state.canDrop       = true;
-    state.nextBallNumber = null;
+    state.canDrop           = true;
+    state.currentBallNumber = null;
+    state.nextBallNumber    = null;
 
     if (state.comboTimer)        clearTimeout(state.comboTimer);
     if (state.dropCooldownTimer) clearTimeout(state.dropCooldownTimer);
@@ -482,10 +485,11 @@ window.BoomTen.Game = (function () {
     // Set up collision-based merge detection
     setupCollisionHandler();
 
-    // Roll the first "next ball" for preview
+    // Roll the current ball (what you'll drop) and next ball (queue preview)
+    state.currentBallNumber = SPAWN_WEIGHTS[Math.floor(Math.random() * SPAWN_WEIGHTS.length)];
     rollNextBall();
 
-    // Update the UI preview
+    // Update the UI: HUD shows the NEXT ball (queue), not the current one
     if (BoomTen.UI && BoomTen.UI.updateNextBall) {
       BoomTen.UI.updateNextBall(state.nextBallNumber, COLORS[state.nextBallNumber]);
     }

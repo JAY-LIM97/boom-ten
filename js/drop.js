@@ -100,7 +100,9 @@ window.BoomTen.Drop = (function () {
 
   // ─── Drop Logic ─────────────────────────────────────────────────────
   /**
-   * Drop the pre-rolled ball at the given X position.
+   * Drop the current ball at the given X position.
+   * Uses currentBallNumber (the ghost preview ball), then advances the queue:
+   *   current ← next, next ← new roll.
    * Respects cooldown and game state.
    */
   function dropBall(x) {
@@ -109,7 +111,7 @@ window.BoomTen.Drop = (function () {
     if (game.state.gameState !== 'playing') return;
     if (!game.state.canDrop) return;
 
-    const number = game.state.nextBallNumber;
+    const number = game.state.currentBallNumber;
     if (number == null) return;
 
     // Drop Y position: just below the drop zone line
@@ -132,10 +134,11 @@ window.BoomTen.Drop = (function () {
       game.state.canDrop = true;
     }, game.DROP_COOLDOWN);
 
-    // Roll next ball
+    // Advance the queue: current ← next, next ← new roll
+    game.state.currentBallNumber = game.state.nextBallNumber;
     game.rollNextBall();
 
-    // Update UI preview
+    // Update HUD: show the NEXT ball in the queue (not the current one)
     if (BoomTen.UI && BoomTen.UI.updateNextBall) {
       BoomTen.UI.updateNextBall(
         game.state.nextBallNumber,
@@ -147,6 +150,7 @@ window.BoomTen.Drop = (function () {
   // ─── Render Ghost Preview ──────────────────────────────────────────
   /**
    * Draw the ghost preview ball and drop guide line.
+   * Shows the CURRENT ball (the one about to be dropped), not the next one.
    * Called from Game's renderLoop each frame.
    *
    * @param {CanvasRenderingContext2D} renderCtx
@@ -156,7 +160,7 @@ window.BoomTen.Drop = (function () {
     if (!game || game.state.gameState !== 'playing') return;
     if (pointerX < 0) return;
 
-    const number = game.state.nextBallNumber;
+    const number = game.state.currentBallNumber;
     if (number == null) return;
 
     const radius = game.ballRadius(number);

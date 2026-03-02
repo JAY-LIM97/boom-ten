@@ -85,15 +85,12 @@ window.BoomTen.UI = (function () {
     }
 
     // ── Pause modal: "처음부터" (restart from pause) ──────────────────────
-    const pauseCard = pauseModal ? pauseModal.querySelector('.pause-card') : null;
-    if (pauseCard) {
-      const pauseRestartBtn = pauseCard.querySelector('.pause-actions .btn-secondary');
-      if (pauseRestartBtn) {
-        pauseRestartBtn.addEventListener('click', () => {
-          _hidePause();
-          _restartGame();
-        });
-      }
+    const pauseRestartBtn = document.getElementById('btn-pause-restart');
+    if (pauseRestartBtn) {
+      pauseRestartBtn.addEventListener('click', () => {
+        _hidePause();
+        _restartGame();
+      });
     }
 
     // ── Pause modal: sound toggle ──────────────────────────────────────────
